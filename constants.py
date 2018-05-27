@@ -1,5 +1,8 @@
 import pygame
 
+
+pygame.init()
+pygame.font.init()
 # GUI
 GUIWIDTH = 1280
 GUIHEIGHT = 800
@@ -8,6 +11,10 @@ SCREEN = pygame.display.set_mode((GUIWIDTH, GUIHEIGHT))
 
 MOUSE_POS = (0,0)
 MOUSE_CLICKED = False # 마우스 왼쪽버튼
+
+# FONT
+FONT_TYPE = "font/NanumBarunGothicBold.ttf"
+FONT = pygame.font.Font(FONT_TYPE, 36)
 
 # COLOUR
 WHITE = (255,255,255)
@@ -52,6 +59,30 @@ MODE_AI_C = pygame.image.load("img/mode/button/mode_ai_c.png")
 AI_EASY = pygame.image.load("img/mode/button/ai_easy/easy.png")
 AI_EASY_O = pygame.image.load("img/mode/button/ai_easy/easy_o.png")
 AI_EASY_C = pygame.image.load("img/mode/button/ai_easy/easy_c.png")
+
+# CHIPS
+CHIP1 = pygame.image.load("img/chips/1.png")
+CHIP1_O = pygame.image.load("img/chips/1_o.png")
+CHIP2 = pygame.image.load("img/chips/2.png")
+CHIP2_O = pygame.image.load("img/chips/2_o.png")
+CHIP3 = pygame.image.load("img/chips/3.png")
+CHIP3_O = pygame.image.load("img/chips/3_o.png")
+CHIP4 = pygame.image.load("img/chips/4.png")
+CHIP4_O = pygame.image.load("img/chips/4_o.png")
+
+PLUS1 = pygame.image.load("img/chips/add/1.png")
+PLUS5 = pygame.image.load("img/chips/add/5.png")
+PLUS10 = pygame.image.load("img/chips/add/10.png")
+MINUS1 = pygame.image.load("img/chips/minus/1.png")
+MINUS5 = pygame.image.load("img/chips/minus/5.png")
+MINUS10 = pygame.image.load("img/chips/minus/10.png")
+
+BET = pygame.image.load("img/chips/motion/bet.png")
+BET_O = pygame.image.load("img/chips/motion/bet_o.png")
+BET_C = pygame.image.load("img/chips/motion/bet_c.png")
+FOLD = pygame.image.load("img/chips/motion/fold.png")
+FOLD_O = pygame.image.load("img/chips/motion/fold_o.png")
+FOLD_C = pygame.image.load("img/chips/motion/fold_c.png")
 
 # MODE_AI
 AI_EASY_BACK = pygame.image.load("img/ai/easy/back.png")

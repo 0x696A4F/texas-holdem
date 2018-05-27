@@ -5,17 +5,20 @@ from class_player import *
 import random
 import pygame
 import constants as c
+import buttons as b
 
 deck = []
 small_blind = 1
 max_player = 2
 me = player(1,275)
-com = ai(2,250)
+com = ai(2,250, "EASY")
 divided = False
 race_step = 0
 bet_state = 50
 my_bet = 25
 com_bet = 50
+now_bet = 0
+selected_chip = 0
 def fresh_deck(mode):
     global deck, first
     new = []
@@ -57,8 +60,38 @@ def div_animation():
             break
 
 
+def change_chip():
+    global selected_chip
+    check = 0
+    for i in range(4):
+        if selected_chip != b.b_chip[i][1] and b.b_chip[i][0].motion:
+            selected_chip = b.b_chip[i][1]
+            for j in range(4):
+                if not i == j:
+                    b.b_chip[j][0].motion = False
+        if not b.b_chip[i][0].motion:
+            check += 1
+
+    if check == 4:
+        selected_chip = 0
+
+
+def count_chip(multiple):
+    global now_bet
+    for i in range(3):
+        if b.b_plus[i][0].motion:
+            now_bet += b.b_plus[i][1] * multiple
+            if now_bet > me.get_chips:
+                now_bet = me.get_chips
+            b.b_plus[i][0].motion = False
+        elif b.b_minus[i][0].motion:
+            now_bet -= b.b_minus[i][1] * multiple
+            if now_bet < 0:
+                now_bet = 0
+            b.b_minus[i][0].motion = False
+
+
 def GAME_AI_SCREEN(mode):
-    global deck, divided, race_step
     if mode == "EASY":
         c.SCREEN.blit(c.AI_EASY_BACK, (0,0))
     elif mode == "NORMAL":
@@ -88,8 +121,17 @@ def GAME_AI_SCREEN(mode):
             opened = True
 
         if opened:
-            command = input("콜/레이즈/폴드 : ")
-            if command == "콜":
-                me.bet(bet_state - my_bet)
-                com.bet(bet_state - com_bet)
-                race_step += 1
+            for i in range(4): # 칩생성
+                b.b_chip[i][0]()
+            b.b_bet()
+            b.b_fold()
+            change_chip()
+            if selected_chip:
+                for i in range(3): # 버튼 생성
+                    b.b_plus[i][0]()
+                    b.b_minus[i][0]()
+            count_chip(selected_chip)
+            my_bet_state = c.FONT.render(str(my_bet) + "/" + str(now_bet), True, (0,0,0))
+            c.SCREEN.blit(my_bet_state, (439,705))
+            ai_bet_state = c.FONT.render(str(com_bet), True, (0,0,0))
+            c.SCREEN.blit(ai_bet_state, (750,85))

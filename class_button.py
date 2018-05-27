@@ -30,8 +30,8 @@ class button:
 
     @property
     def clicked_button(self):
-        if not self.iClick: # 클릭버튼 이미지가 없을경우
-            return False
+        #if not self.iClick: # 클릭버튼 이미지가 없을경우
+        #    return False
         if (not self.clicked) and self.on_button and c.MOUSE_CLICKED: # 버튼 누른상태 아니고, 마우스로 버튼위를 클릭했을때
             self.clicked = True
             return True
@@ -46,16 +46,19 @@ class button:
         return False
 
     def __call__(self):
-        if not self.disabled: # 버튼이 비활성화가 아니고, 모션을 실행시키지 않을때
+        if not self.disabled: # 버튼이 비활성화가 아닐 때
             if self.on_button and not (self.clicked_button or self.motion): # 버튼 위에있고, 클릭 X, 모션실행 X
                 if self.iOver:
                     c.SCREEN.blit(self.iOver, (self.x, self.y))
                 else:
                     c.SCREEN.blit(self.iNormal, (self.x, self.y))
-            elif (self.clicked_button and self.iClick) or self.motion:
-                c.SCREEN.blit(self.iClick, (self.x, self.y))
+            elif self.clicked_button or self.motion:
+                if self.iClick:
+                    c.SCREEN.blit(self.iClick, (self.x, self.y))
+                else:
+                    c.SCREEN.blit(self.iNormal, (self.x, self.y))
             else:
-                if self.on_button and self.iOver:
+                if self.on_button and self.iOver: # 오차나서 다시 넣어줌
                     c.SCREEN.blit(self.iOver, (self.x, self.y))
                 else:
                     c.SCREEN.blit(self.iNormal, (self.x, self.y))
