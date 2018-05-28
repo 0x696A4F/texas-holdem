@@ -6,6 +6,8 @@ class player:
         # default
         self.__cards = []
         self.__opened = False
+        self.__betted = 0
+        self.__folded = False
 
     @property
     def get_name(self):
@@ -19,11 +21,28 @@ class player:
     def get_opened(self):
         return self.__opened
 
+    @property
+    def get_betted(self):
+        return self.__betted
+
+    @property
+    def get_folded(self):
+        return self.__folded
+
+    @property
+    def reset_betted(self):
+        self.__betted = 0
+
     def get_card(self,index):
         return self.__cards[index]
 
     def give_card(self, card):
         self.__cards.append(card)
+
+    @property
+    def card_reset(self):
+        self.__opened = False
+        self.__cards = []
 
     @property
     def card_open(self):
@@ -39,4 +58,8 @@ class player:
         self.__cards[1].show()
 
     def bet(self, chips):
-        self.__chips -= chips
+        if chips == -1:
+            self.__folded = True
+        else:
+            self.__chips -= chips
+            self.__betted += chips
