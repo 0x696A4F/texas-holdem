@@ -11,6 +11,7 @@ SCREEN = pygame.display.set_mode((GUIWIDTH, GUIHEIGHT))
 
 MOUSE_POS = (0,0)
 MOUSE_CLICKED = False # 마우스 왼쪽버튼
+MSG_ACTIVE = False
 
 # FONT
 FONT_TYPE = "font/NanumBarunGothicBold.ttf"

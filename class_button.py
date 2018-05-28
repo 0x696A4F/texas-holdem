@@ -30,8 +30,6 @@ class button:
 
     @property
     def clicked_button(self):
-        #if not self.iClick: # 클릭버튼 이미지가 없을경우
-        #    return False
         if (not self.clicked) and self.on_button and c.MOUSE_CLICKED: # 버튼 누른상태 아니고, 마우스로 버튼위를 클릭했을때
             self.clicked = True
             return True
