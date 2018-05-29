@@ -37,6 +37,10 @@ class card:
         return self.__faced
 
     @property
+    def get_pos(self):
+        return self.__pos
+
+    @property
     def faced_up(self):
         if not self.__facing:
             self.__w_size -= 10

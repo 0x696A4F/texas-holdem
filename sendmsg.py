@@ -1,6 +1,7 @@
 from class_button import *
 
 import pygame
+import time
 import constants as c
 
 iYes = pygame.Surface((60,30))
@@ -18,7 +19,6 @@ b_No = button((630, 430), iNo)
 def YesNo(text):
     c.MSG_ACTIVE = True
 
-    x,y = 400, 300
     back = pygame.Surface((c.GUIWIDTH,200))
     back.fill((92,92,92))
     back.set_alpha(210)
@@ -26,8 +26,8 @@ def YesNo(text):
     textF = pygame.font.Font(c.FONT_TYPE, 50)
     text = textF.render(str(text), True, c.BLACK)
 
-    c.SCREEN.blit(back, (0,y))
-    c.SCREEN.blit(text, (int((c.GUIWIDTH - text.get_width())/2),y+50))
+    c.SCREEN.blit(back, (0,300))
+    c.SCREEN.blit(text, (int((c.GUIWIDTH - text.get_width())/2),350))
     b_Yes()
     b_No()
     if b_Yes.motion:

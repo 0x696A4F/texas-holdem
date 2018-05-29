@@ -20,6 +20,10 @@ class ai:
     def get_chips(self):
         return self.__chips
 
+    def give_chips(self, chips):
+        self.__chips += chips
+        print(self.__chips)
+
     @property
     def get_opened(self):
         return self.__opened

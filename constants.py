@@ -85,5 +85,8 @@ FOLD = pygame.image.load("img/chips/motion/fold.png")
 FOLD_O = pygame.image.load("img/chips/motion/fold_o.png")
 FOLD_C = pygame.image.load("img/chips/motion/fold_c.png")
 
+# RESULTS
+PLAYER_FOLD = pygame.image.load("img/results/fold.png")
+
 # MODE_AI
 AI_EASY_BACK = pygame.image.load("img/ai/easy/back.png")

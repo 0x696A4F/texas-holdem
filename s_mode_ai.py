@@ -17,7 +17,7 @@ race_step = 0
 bet_turn = 0
 count_turn = 0
 bet_state = 0
-total_betted = 0
+stake_chips = 0
 will_bet = 0
 selected_chip = 0
 def fresh_deck(mode):
@@ -109,7 +109,7 @@ def count_chip(multiple):
 
 
 def GAME_AI_SCREEN(mode):
-    global total_betted, bet_state, race_step, bet_turn, count_turn, small_blind, will_bet
+    global stake_chips, bet_state, race_step, bet_turn, count_turn, small_blind, will_bet
     if mode == "EASY":
         c.SCREEN.blit(c.AI_EASY_BACK, (0,0))
     elif mode == "NORMAL":
@@ -148,7 +148,7 @@ def GAME_AI_SCREEN(mode):
     else:
         opened = False
         check = 0 # 앞면 개수
-        if not p_list[1].get_opened:
+        if not p_list[1].get_opened: # 나의 카드가 오픈이 안되어 있다면
             p_list[1].card_open
             for i in range(2, max_player+1):
                 p_list[i].card_show
@@ -159,6 +159,12 @@ def GAME_AI_SCREEN(mode):
                 p_list[i].card_show
                 if p_list[i].get_opened:
                     check += 2
+                if p_list[i].get_folded:
+                    p_1 = p_list[i].get_card(0).get_pos
+                    p_2 = p_list[i].get_card(1).get_pos
+                    f_pos = (int((p_1[0] + p_2[0] - c.PLAYER_FOLD.get_width()) / 2 + 56),
+                             int((p_1[1] + p_2[1] - c.PLAYER_FOLD.get_height()) / 2 + 74))
+                    c.SCREEN.blit(c.PLAYER_FOLD, f_pos)
             for i in range(5):
                 if 1 < race_step and i <= race_step:
                     c_cards[i].show(False,True)
@@ -167,11 +173,38 @@ def GAME_AI_SCREEN(mode):
                 if c_cards[i].get_faced:
                     check += 1
 
-        if check == 2 + (0 if race_step == 1 else (race_step+1 if race_step < 5 else 5+(max_player-1)*2)):
+        if race_step < 5 and check == 2 + (0 if race_step == 1 else race_step+1): # 스텝5이하이고 애니메이션 처리완료되면
             opened = True
+            
+        if race_step == 5: # 승패 처리
+            pass
 
         if opened:
             betted = [0] + [p_list[i].get_betted for i in range(1, max_player + 1)]
+            if count_turn == max_player: # 턴이 한번씩 다 돌았을 때
+                bet_check = 0
+                fold_check = 0
+                collect_betted = 0
+                for i in range(1,max_player+1): # 베팅상황 체크
+                    if betted[i] == bet_state or p_list[i].get_folded:
+                        bet_check += 1
+                        collect_betted += betted[i]
+                        if p_list[i].get_folded:
+                            fold_check += 1
+                if bet_check == max_player: # 모두 콜하거나 폴드 되었다면
+                    stake_chips += collect_betted
+                    if fold_check == max_player - 1: # 한명빼고 나머지가 모두 폴드 했을 때
+                        race_step = 5
+                    else:
+                        race_step += 1
+                        bet_state = 0
+                        will_bet = 0
+                        bet_turn = small_blind
+                        p_list[1].reset_betted
+                        p_list[2].reset_betted
+                        p_list[2].reset_think # AI 재설정
+                count_turn = 0
+
             if bet_turn == 1 and not p_list[1].get_folded: # 나의 턴일때
                 for i in range(4): # 칩생성
                     b.b_chip[i][0]()
@@ -203,13 +236,16 @@ def GAME_AI_SCREEN(mode):
                 elif not p_list[bet_turn].get_thinking:
                     p_list[bet_turn].think(c_cards[0:race_step-1])
 
+            rFont = pygame.font.Font(c.FONT_TYPE, 50)
+            now_round = rFont.render("<ROUND " + str(race_step) + ">", True,(0,100,255))
+            c.SCREEN.blit(now_round, (30,30))
             if bet_turn == 1:
-                my_bet_state = c.FONT.render(str(betted[1]) + "/" + str(will_bet), True, (0,0,0))
+                my_bet_state = c.FONT.render("누적:" + str(betted[1]) + " / 예정:" + str(will_bet), True, (0,0,0))
             else:
-                my_bet_state = c.FONT.render(str(betted[1]), True, (0,0,0))
-            c.SCREEN.blit(my_bet_state, (439,705))
-            ai_bet_state = c.FONT.render(str(betted[2]), True, (0,0,0))
-            c.SCREEN.blit(ai_bet_state, (750,85))
+                my_bet_state = c.FONT.render("누적:" + str(betted[1]), True, (0,0,0))
+            c.SCREEN.blit(my_bet_state, (130,748))
+            ai_bet_state = c.FONT.render("누적:" + str(betted[2]), True, (0,0,0))
+            c.SCREEN.blit(ai_bet_state, (874,25))
 
             if b.b_bet.motion:
                 if will_bet == 0:
@@ -221,10 +257,14 @@ def GAME_AI_SCREEN(mode):
                     if will_bet + betted[1] <= bet_state:
                         msg = "<" + str(bet_state - betted[1]) + "> 내고 콜 하시겠습니까?"
                     else:
-                        msg = "<" + str(bet_state - betted[1]) + "> 내고 <" + str(will_bet + betted[1] - bet_state) +"> 레이즈 하시겠습니까?"
+                        if bet_state > 0:
+                            msg = "<" + str(bet_state - betted[1]) + "> 내고 <"+\
+                                  str(will_bet + betted[1] - bet_state) +"> 레이즈 하시겠습니까?"
+                        else:
+                            msg = "<" + str(will_bet) + "> 베팅 하시겠습니까?"
                 motion = sm.YesNo(msg)
                 if motion == "YES":
-                    p_list[1].bet(bet_state - betted[1] + (0 if will_bet+betted[1] <= bet_state else will_bet))
+                    p_list[1].bet(bet_state - betted[1] if will_bet+betted[1] <= bet_state else will_bet)
                     bet_state += 0 if will_bet+betted[1] <= bet_state else will_bet
                     bet_turn = bet_turn+1 if bet_turn+1 <= max_player else 1
                     count_turn += 1
@@ -238,24 +278,4 @@ def GAME_AI_SCREEN(mode):
                     p_list[1].bet(-1)
                     b.b_fold.reset
                 elif motion == "NO":
-                    b.b_bet.reset
-
-            if count_turn == max_player: # 턴이 한번씩 다 돌았을 때
-                bet_check = 0
-                fold_check = 0
-                collect_betted = 0
-                for i in range(1,max_player+1): # 베팅상황 체크
-                    if betted[i] == bet_state or p_list[i].get_folded:
-                        bet_check += 1
-                        collect_betted += betted[i]
-                        if p_list[i].get_folded:
-                            fold_check += 1
-                if bet_check == max_player: # 모두 콜하거나 폴드 되었다면
-                    total_betted += collect_betted
-                    if fold_check == max_player - 1: # 한명빼고 나머지가 모두 폴드 했을 때
-                        race_step = 5
-                    else:
-                        race_step += 1
-                        bet_turn = small_blind
-                        p_list[2].reset_think
-                count_turn = 0
+                    b.b_fold.reset

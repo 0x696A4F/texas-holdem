@@ -1,3 +1,6 @@
+import pygame
+import constants as c
+
 class player:
     def __init__(self, name, chips):
         self.__name = name
