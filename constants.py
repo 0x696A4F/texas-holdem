@@ -1,8 +1,8 @@
 import pygame
 
 
-pygame.init()
 pygame.font.init()
+
 # GUI
 GUIWIDTH = 1280
 GUIHEIGHT = 800
@@ -24,7 +24,7 @@ LOGO_GREEN = (11,148,68)
 EASY_COLOUR = (210,200,0)
 
 # SCREEN WHERE
-WHERE = "GAME_AI_EASY" # FIRST = LOGO
+WHERE = "GAME_AI_HARD" # FIRST = LOGO
 
 # LOGO
 TEXAS_LOGO = pygame.image.load("img/logo/holdem_logo.png")

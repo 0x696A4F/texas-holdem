@@ -17,8 +17,8 @@ def FILL():
             LOGO_SCREEN()
         elif c.WHERE == "MODE":
             MODE_SCREEN()
-        elif c.WHERE == "GAME_AI_EASY":
-            GAME_AI_SCREEN("EASY")
+        elif c.WHERE == "GAME_AI_HARD":
+            GAME_AI_SCREEN("HARD")
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()

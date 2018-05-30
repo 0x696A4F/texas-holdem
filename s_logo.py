@@ -26,7 +26,7 @@ def LOGO_SCREEN():
     b.b_select()
     b.b_developer()
     if b.b_select.motion:
-        c.WHERE = "MODE"
+        c.WHERE = "GAME_AI_HARD"
         b.b_select.reset
     if b.b_developer.motion:
         back_dark = pygame.Surface((c.GUIWIDTH, c.GUIHEIGHT))

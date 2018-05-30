@@ -1,3 +1,6 @@
+import s_mode_ai as s
+import random
+
 class ai:
     def __init__(self, name, chips, mode):
         self.__name = name
@@ -76,11 +79,42 @@ class ai:
     def bet(self, chips):
         self.__chips -= chips
         self.__betted += chips
-        self.__thinked = True
 
     @property
     def get_thinking(self):
         return self.__thinking
 
-    def think(self, cards):
+    def think(self, cards, step, bet_state):
+        # 순위(순위가 같은 경우 추후에 계산)
+        # 000 ~ 001 Royal Flush
+        # 002 ~ 010 Straight Flush
+        # 011 ~ 023 Four Card
+        # 024 ~ 036 Full House
+        # 037 ~ 044 Flush
+        # 045 ~ 054 Straight
+        # 055 ~ 067 Triple
+        # 068 ~ 145 Two Pair
+        # 146 ~ 158 One Pair
+        # 159 ~ 166 High Card
         self.__thinking = True
+        card_list = []
+        for i in self.__cards + cards:
+            card_list.append(list(i.get_card))
+        tree = s.get_rank(s.str_to_int(card_list))
+        rand = random.randint(1,100)
+        expected = bet_state - self.__betted
+        print(tree)
+        if step == 1:
+            if tree[1] in ("HIGH CARD", "ONE PAIR"):
+                if 30 < rand <= 60:
+                    self.bet(expected)
+                else:
+                    self.__folded = True
+            elif tree[1] == "TWO PAIR":
+                if 10 < rand <= 30 or 50 < rand <= 90:
+                    self.bet(expected)
+                else:
+                    self.__folded = True
+            else:
+                self.bet(expected)
+        self.__thinked = True

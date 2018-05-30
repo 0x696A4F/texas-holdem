@@ -10,7 +10,7 @@ import sendmsg as sm
 
 c_cards = []
 small_blind = 0
-p_list = [0, player(1,300), ai(2,300,"EASY")]
+p_list = [0, player(1,300), ai(2,300,"HARD")]
 max_player = len(p_list) - 1
 divided = False
 race_step = 0
@@ -107,15 +107,222 @@ def count_chip(multiple):
                 will_bet = 0
             b.b_minus[i][0].motion = False
 
+def str_to_int(card_list):  # 카드순위를 계산하기 쉽게 문양도 숫자로 변환
+    for card in card_list:
+        if card[0] == "SPADE":
+            card[0] = 0
+        elif card[0] == "HEART":
+            card[0] = 1
+        elif card[0] == "DIAMOND":
+            card[0] = 2
+        elif card[0] == "CLUB":
+            card[0] = 3
+        if card[1] == "A":  # ACE가 가장 높은 카드이므로 14로 배정
+            card[1] = 14
+        elif card[1] == "K":
+            card[1] = 13
+        elif card[1] == "Q":
+            card[1] = 12
+        elif card[1] == "J":
+            card[1] = 11
+        else:
+            card[1] = int(card[1])
+    return card_list
+
+def int_to_str(card_list):
+    for card in card_list:
+        if card[0] == 0:
+            card[0] = "Spade"
+        elif card[0] == 1:
+            card[0] = "Heart"
+        elif card[0] == 2:
+            card[0] = "Diamond"
+        elif card[0] == 3:
+            card[0] = "Club"
+        if card[1] == 14:
+            card[1] = "A"
+        elif card[1] == 13:
+            card[1] = "K"
+        elif card[1] == 12:
+            card[1] = "Q"
+        elif card[1] == 11:
+            card[1] = "J"
+    return card_list
+
+def get_rank(card_list):
+    hand = sorted(card_list)
+    rank_list = []
+    for x in hand:
+        rank_list.append(x[1])
+    rank_list.sort()
+    # 순위(순위가 같은 경우 추후에 계산)
+    # 000 ~ 001 Royal Flush
+    # 002 ~ 010 Straight Flush
+    # 011 ~ 023 Four Card
+    # 024 ~ 036 Full House
+    # 037 ~ 044 Flush
+    # 045 ~ 054 Straight
+    # 055 ~ 067 Triple
+    # 068 ~ 145 Two Pair
+    # 146 ~ 158 One Pair
+    # 159 ~ 166 High Card
+
+    rank_name = "High_Card"
+    rank = 173 - max(rank_list)
+
+    Four_card = False
+    Full_House = False
+
+    Four_card_number = 0
+    Triple_list = []
+    Pair_list = []
+
+    for x in range(15, 1, -1):
+        if rank_list.count(x) == 4:    # 같은 숫자가 4개
+            Four_card_number = x
+        if rank_list.count(x) == 3:    # 같은 숫자가 3개 (2개 이상일 수 있으므로 리스트)
+            Triple_list.append(x)
+        if rank_list.count(x) == 2:    # 같은 숫자가 2개 (2개 이상일 수 있으므로 리스트)
+            Pair_list.append(x)
+
+    if Four_card_number > 0:
+        Four_card = True
+        rank = 25 - Four_card_number
+        rank_name = "FOUR CARD"
+
+    elif Triple_list != []:
+        if Pair_list != []:             # Full House
+            Full_House = True
+            rank = 38 - Triple_list[0]
+            rank_name = "FULL HOUSE"
+        else:
+            rank = 69 - Triple_list[0]
+            rank_name = "TRIPLE"
+
+    elif Pair_list != []:
+        if len(Pair_list) >= 2:
+            rank_name = "TWO PAIR"
+            if Pair_list[0] == 14:
+                rank = 81 - Pair_list[1]
+            elif Pair_list[0] == 13:
+                rank = 92 - Pair_list[1]
+            elif Pair_list[0] == 12:
+                rank = 102 - Pair_list[1]
+            elif Pair_list[0] == 11:
+                rank = 111 - Pair_list[1]
+            elif Pair_list[0] == 10:
+                rank = 119 - Pair_list[1]
+            elif Pair_list[0] == 9:
+                rank = 126 - Pair_list[1]
+            elif Pair_list[0] == 8:
+                rank = 132 - Pair_list[1]
+            elif Pair_list[0] == 7:
+                rank = 137 - Pair_list[1]
+            elif Pair_list[0] == 6:
+                rank = 141 - Pair_list[1]
+            elif Pair_list[0] == 5:
+                rank = 144 - Pair_list[1]
+            elif Pair_list[0] == 4:
+                rank = 146 - Pair_list[1]
+            elif Pair_list[0] == 3:
+                rank = 145
+        elif len(Pair_list) == 1:
+            if rank > 146:
+                rank = 160 - Pair_list[0]
+                rank_name = "ONE PAIR"
+    Straight = False
+    top_number = 0
+    for i in range(len(rank_list)-4):
+        if rank_list[i + 1] - rank_list[i] == 1 and rank_list[i + 2] - rank_list[i + 1] == 1 and rank_list[i + 3] - \
+                rank_list[i + 2] == 1 and rank_list[i + 4] - rank_list[i + 3] == 1:
+            Straight = True
+            top_number = rank_list[i+4]
+    if Straight:
+        if top_number == 14:
+            rank = 45
+            rank_name = "MOUNTAIN"
+        else:
+            rank = 59 - top_number
+            rank_name = "STRAIGHT"
+    if 2 in rank_list and 3 in rank_list and \
+        4 in rank_list and 5 in rank_list and \
+        14 in rank_list:                          # A 2 3 4 5 스트레이트는 숫자상으로 2 3 4 5 14 이므로 이렇게 표현
+        rank = 54
+        rank_name = "STRAIGHT"
+
+    suit_list = []
+    for x in hand:
+        suit_list.append(x[0])
+
+    if not(Four_card or Full_House):                # Flush 보다 높은 족보
+        Flush = False
+        num = []
+        if suit_list.count(0) >= 5:
+            Flush = True
+            pattern_num = 0
+            for x in range(0, len(hand)):                     # 문양이 다른 카드는 삭제한다.
+                if suit_list[len(hand)-1-x] != pattern_num:
+                    del hand[len(hand)-1-x]
+            for x in hand:
+                num.append(x[1])
+            rank = 51 - max(num)
+            rank_name = "SPADE FLUSH"
+        elif suit_list.count(1) >= 5:
+            Flush = True
+            pattern_num = 1
+            for x in range(0, len(hand)):
+                if suit_list[len(hand) - 1 - x] != pattern_num:
+                    del hand[len(hand) - 1 - x]
+            for x in hand:
+                num.append(x[1])
+            rank = 51 - max(num)
+            rank_name = "HEART FLUSH"
+        elif suit_list.count(2) >= 5:
+            Flush = True
+            pattern_num = 2
+            for x in range(0, len(hand)):
+                if suit_list[len(hand) - 1 - x] != pattern_num:
+                    del hand[len(hand) - 1 - x]
+            for x in hand:
+                num.append(x[1])
+            rank = 51 - max(num)
+            rank_name = "DIAMOND FLUSH"
+        elif suit_list.count(3) >= 5:
+            Flush = True
+            pattern_num = 3
+            for x in range(0, len(hand)):
+                if suit_list[len(hand) - 1 - x] != pattern_num:
+                    del hand[len(hand) - 1 - x]
+            for x in hand:
+                num.append(x[1])
+            rank = 51 - max(num)
+            rank_name = "CLUB FLUSH"
+        if Flush:
+            num.sort()
+            if num[1]-num[0] == 1 and \
+                num[2]-num[1] == 1 and \
+                num[3]-num[2] == 1 and \
+                num[4]-num[3] == 1:
+                if max(num) == 14:
+                    rank = 1
+                    rank_name = "ROYAL FLUSH"
+                else:
+                    rank = 15 - max(num)
+                    rank_name = "STRAIGHT FLUSH"
+            if num == [2, 3, 4, 5, 14]:
+                rank = 10
+                rank_name = "STRAIGHT FLUSH"
+
+    return (rank, rank_name)
 
 def GAME_AI_SCREEN(mode):
     global stake_chips, bet_state, race_step, bet_turn, count_turn, small_blind, will_bet
     if mode == "EASY":
-        c.SCREEN.blit(c.AI_EASY_BACK, (0,0))
+        pass
     elif mode == "NORMAL":
         pass
     elif mode == "HARD":
-        pass
+        c.SCREEN.blit(c.AI_EASY_BACK, (0, 0))
 
     if not c_cards: # 덱이 비었을때
         fresh_deck(mode)
@@ -134,15 +341,15 @@ def GAME_AI_SCREEN(mode):
                 show_player += 1
                 if show_player > max_player:
                     show_player = 1
-        start = sm.YesNo("게임을 시작하시겠습니까?")
+        start = sm.YesNo(mode + " 난이도의 게임을 시작하시겠습니까?")
         if start == "YES":
             race_step = 1
             p_list[small_blind].bet(25)
             p_list[small_blind + 1 if small_blind + 1 <= max_player else 1].bet(50)
-            count_turn += 2
+            #count_turn += 2 2인용 초과할때
             bet_state = 50
         elif start == "NO":
-            c.WHERE = "MODE"
+            c.WHERE = "LOGO"
     elif race_step == 1 and not divided:
         div_animation()
     else:
@@ -181,30 +388,6 @@ def GAME_AI_SCREEN(mode):
 
         if opened:
             betted = [0] + [p_list[i].get_betted for i in range(1, max_player + 1)]
-            if count_turn == max_player: # 턴이 한번씩 다 돌았을 때
-                bet_check = 0
-                fold_check = 0
-                collect_betted = 0
-                for i in range(1,max_player+1): # 베팅상황 체크
-                    if betted[i] == bet_state or p_list[i].get_folded:
-                        bet_check += 1
-                        collect_betted += betted[i]
-                        if p_list[i].get_folded:
-                            fold_check += 1
-                if bet_check == max_player: # 모두 콜하거나 폴드 되었다면
-                    stake_chips += collect_betted
-                    if fold_check == max_player - 1: # 한명빼고 나머지가 모두 폴드 했을 때
-                        race_step = 5
-                    else:
-                        race_step += 1
-                        bet_state = 0
-                        will_bet = 0
-                        bet_turn = small_blind
-                        p_list[1].reset_betted
-                        p_list[2].reset_betted
-                        p_list[2].reset_think # AI 재설정
-                count_turn = 0
-
             if bet_turn == 1 and not p_list[1].get_folded: # 나의 턴일때
                 for i in range(4): # 칩생성
                     b.b_chip[i][0]()
@@ -228,16 +411,16 @@ def GAME_AI_SCREEN(mode):
                         else:
                             b.b_plus[i][0].disabled = b.b_minus[i][0].disabled = False
                 count_chip(selected_chip)
-            elif bet_turn == 1 and p_list[1].get_folded:
-                count_turn += 1
-            else: # AI THINKING
+            elif bet_turn == 2: # AI THINKING
                 if (p_list[bet_turn].get_thinked and betted[bet_turn] == bet_state) or p_list[bet_turn].get_folded:
                     count_turn += 1
+                    p_list[bet_turn].reset_think
+                    bet_turn = bet_turn + 1 if bet_turn + 1 <= max_player else 1
                 elif not p_list[bet_turn].get_thinking:
-                    p_list[bet_turn].think(c_cards[0:race_step-1])
+                    p_list[bet_turn].think(c_cards, race_step, bet_state)
 
             rFont = pygame.font.Font(c.FONT_TYPE, 50)
-            now_round = rFont.render("<ROUND " + str(race_step) + ">", True,(0,100,255))
+            now_round = rFont.render("<" + mode + " ROUND " + str(race_step) + ">", True, (255,31,31))
             c.SCREEN.blit(now_round, (30,30))
             if bet_turn == 1:
                 my_bet_state = c.FONT.render("누적:" + str(betted[1]) + " / 예정:" + str(will_bet), True, (0,0,0))
@@ -271,6 +454,30 @@ def GAME_AI_SCREEN(mode):
                     b.b_bet.reset
                 elif motion == "NO":
                     b.b_bet.reset
+
+            if count_turn == max_player: # 턴이 한번씩 다 돌았을 때
+                bet_check = 0
+                fold_check = 0
+                collect_betted = 0
+                for i in range(1,max_player+1): # 베팅상황 체크
+                    if betted[i] == bet_state or p_list[i].get_folded:
+                        bet_check += 1
+                        collect_betted += betted[i]
+                        if p_list[i].get_folded:
+                            fold_check += 1
+                if bet_check == max_player: # 모두 콜하거나 폴드 되었다면
+                    stake_chips += collect_betted
+                    if fold_check == max_player - 1: # 한명빼고 나머지가 모두 폴드 했을 때
+                        race_step = 5
+                    else:
+                        race_step += 1
+                        bet_state = 0
+                        will_bet = 0
+                        bet_turn = small_blind
+                        p_list[1].reset_betted
+                        p_list[2].reset_betted
+                        p_list[2].reset_think # AI 재설정
+                count_turn = 0
 
             if b.b_fold.motion:
                 motion = sm.YesNo("정말로 폴드 하시겠습니까?")
