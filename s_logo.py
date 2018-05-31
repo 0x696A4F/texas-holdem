@@ -1,6 +1,9 @@
 import pygame
 import constants as c
 import buttons as b
+import s_mode_ai as s
+import class_ai
+import class_player
 
 def LOGO_SCREEN():
     c.SCREEN.fill(c.LOGO_GREEN)
@@ -27,6 +30,7 @@ def LOGO_SCREEN():
     b.b_developer()
     if b.b_select.motion:
         c.WHERE = "GAME_AI_HARD"
+        s.small_blind = 0
         b.b_select.reset
     if b.b_developer.motion:
         back_dark = pygame.Surface((c.GUIWIDTH, c.GUIHEIGHT))

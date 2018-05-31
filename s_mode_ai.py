@@ -10,9 +10,10 @@ import sendmsg as sm
 
 c_cards = []
 small_blind = 0
-p_list = [0, player(1,300), ai(2,300,"HARD")]
-max_player = len(p_list) - 1
-divided = False
+p_list = [0, player(1, 1000), ai(2, 1000, "HARD")] # 플레이어 리스트
+max_player = 2 # 최대 플레이어
+divided = False # 카드를 배분했는지
+continued = False # 게임을 계속 하는지
 race_step = 0
 bet_turn = 0
 count_turn = 0
@@ -42,7 +43,6 @@ def fresh_deck(mode):
     # 커뮤니티 카드
     for i in range(max_player*2 + 1, max_player*2 + 6):
         c_cards.append(card(new[i], "COMMUNITY", i - (max_player * 2), mode))
-
 
 def div_animation():
     i = small_blind
@@ -76,7 +76,6 @@ def div_animation():
                 c_cards[i].show(True)
                 break
 
-
 def change_chip():
     global selected_chip
     check = 0
@@ -92,7 +91,6 @@ def change_chip():
     if check == 4:
         selected_chip = 0
 
-
 def count_chip(multiple):
     global will_bet
     for i in range(3):
@@ -100,6 +98,8 @@ def count_chip(multiple):
             will_bet += b.b_plus[i][1] * multiple
             if will_bet > p_list[1].get_chips:
                 will_bet = p_list[1].get_chips
+            if will_bet > p_list[2].get_chips:
+                will_bet = p_list[2].get_chips
             b.b_plus[i][0].motion = False
         elif b.b_minus[i][0].motion:
             will_bet -= b.b_minus[i][1] * multiple
@@ -167,7 +167,7 @@ def get_rank(card_list):
     # 146 ~ 158 One Pair
     # 159 ~ 166 High Card
 
-    rank_name = "High_Card"
+    rank_name = "High Card"
     rank = 173 - max(rank_list)
 
     Four_card = False
@@ -316,7 +316,7 @@ def get_rank(card_list):
     return (rank, rank_name)
 
 def GAME_AI_SCREEN(mode):
-    global stake_chips, bet_state, race_step, bet_turn, count_turn, small_blind, will_bet
+    global p_list, stake_chips, bet_state, race_step, bet_turn, count_turn, small_blind, will_bet, c_cards, divided, selected_chip, continued
     if mode == "EASY":
         pass
     elif mode == "NORMAL":
@@ -324,13 +324,28 @@ def GAME_AI_SCREEN(mode):
     elif mode == "HARD":
         c.SCREEN.blit(c.AI_EASY_BACK, (0, 0))
 
-    if not c_cards: # 덱이 비었을때
-        fresh_deck(mode)
-
     if race_step == 0:
+        if not c_cards:  # 덱이 비었을때
+            bet_turn = 0
+            count_turn = 0
+            bet_state = 0
+            stake_chips = 0
+            will_bet = 0
+            selected_chip = 0
+            divided = False
+            for i in range(1, max_player+1):
+                p_list[i].card_reset
+                p_list[i].reset_think
+                p_list[i].reset_betted
+                p_list[i].reset_folded
+            fresh_deck(mode)
         if small_blind == 0: # 처음 게임시작 하는경우
             small_blind = random.randint(1,2) # 재시작인 경우 재시작하기전에 조정
             bet_turn = small_blind+2 if small_blind+2 <= max_player else small_blind+2-max_player
+        elif not c.MSG_ACTIVE:
+            small_blind += 1
+            if small_blind > max_player: small_blind = 1
+            bet_turn = small_blind
         # 카드 순서대로 보여주기
         for i in range(5):
             c_cards[i].show()
@@ -341,15 +356,52 @@ def GAME_AI_SCREEN(mode):
                 show_player += 1
                 if show_player > max_player:
                     show_player = 1
-        start = sm.YesNo(mode + " 난이도의 게임을 시작하시겠습니까?")
-        if start == "YES":
-            race_step = 1
-            p_list[small_blind].bet(25)
-            p_list[small_blind + 1 if small_blind + 1 <= max_player else 1].bet(50)
-            #count_turn += 2 2인용 초과할때
-            bet_state = 50
-        elif start == "NO":
-            c.WHERE = "LOGO"
+        if continued:
+            if p_list[small_blind].get_chips < 25: #SB 지불비용 X일시
+                text = ("당신이 " if small_blind == 2 else "컴퓨터가 ") + "이겼습니다. 처음부터 다시 시작하겠습니까?"
+                print(0)
+                ask = sm.YesNo(text)
+                if ask == "YES":
+                    race_step = 0
+                    small_blind = 0
+                    p_list[1].set_chips(1000)
+                    p_list[2].set_chips(1000)
+                    continued = False
+                elif ask == "NO":
+                    c.WHERE = "LOGO"
+                    p_list[1].set_chips(1000)
+                    p_list[2].set_chips(1000)
+                    continued = False
+            elif p_list[2 if small_blind == 1 else 1].get_chips < 50: # 빅블 지불비용 X일시
+                text = ("당신이 " if small_blind == 1 else "컴퓨터가 ") + "이겼습니다. 처음부터 다시 시작하겠습니까?"
+                ask = sm.YesNo(text)
+                if ask == "YES":
+                    race_step = 0
+                    small_blind = 0
+                    p_list[1].set_chips(1000)
+                    p_list[2].set_chips(1000)
+                    continued = False
+                elif ask == "NO":
+                    c.WHERE = "LOGO"
+                    p_list[1].set_chips(1000)
+                    p_list[2].set_chips(1000)
+                    continued = False
+            else:
+                race_step = 1
+                p_list[small_blind].bet(25)
+                p_list[small_blind + 1 if small_blind + 1 <= max_player else 1].bet(50)
+                # count_turn += 2 #2인용 초과할때
+                bet_state = 50
+        else:
+            start = sm.YesNo(mode + " 난이도의 게임을 시작하시겠습니까?")
+            if start == "YES":
+                race_step = 1
+                p_list[small_blind].bet(25)
+                p_list[small_blind + 1 if small_blind + 1 <= max_player else 1].bet(50)
+                #count_turn += 2 #2인용 초과할때
+                bet_state = 50
+            elif start == "NO":
+                c.WHERE = "LOGO"
     elif race_step == 1 and not divided:
         div_animation()
     else:
@@ -363,7 +415,10 @@ def GAME_AI_SCREEN(mode):
                 c_cards[i].show()
         else:
             for i in range(1, max_player+1):
-                p_list[i].card_show
+                if not (p_list[1].get_folded or p_list[2].get_folded or p_list[i].get_opened) and race_step == 5:
+                    p_list[i].card_open
+                else:
+                    p_list[i].card_show
                 if p_list[i].get_opened:
                     check += 2
                 if p_list[i].get_folded:
@@ -383,12 +438,49 @@ def GAME_AI_SCREEN(mode):
         if race_step < 5 and check == 2 + (0 if race_step == 1 else race_step+1): # 스텝5이하이고 애니메이션 처리완료되면
             opened = True
             
-        if race_step == 5: # 승패 처리
-            pass
+        if race_step == 5: # 승패 처리 (2인용으로 우선제작)
+            if p_list[1].get_folded:
+                p_list[2].give_chips(stake_chips)
+                play_more = sm.YesNo("컴퓨터가 <" + str(stake_chips) + "> 를 가져갑니다. 더 하시겠습니까?")
+                if play_more == "YES":
+                    p_list[2].give_chips(stake_chips)
+                    c_cards = []
+                    race_step = 0
+                    continued = True
+                elif play_more == "NO":
+                    c.WHERE = "LOGO"
+            elif p_list[2].get_folded:
+                play_more = sm.YesNo("당신이 <" + str(stake_chips) + "> 를 가져갑니다. 더 하시겠습니까?")
+                if play_more == "YES":
+                    p_list[1].give_chips(stake_chips)
+                    c_cards = []
+                    race_step = 0
+                    continued = True
+                elif play_more == "NO":
+                    c.WHERE = "LOGO"
+            else: # 모두 폴드 X
+                rankFont = pygame.font.Font(c.FONT_TYPE, 50)
+                p1_rank = rankFont.render(p_list[1].my_rank(c_cards)[1], True, (255,31,31))
+                p2_rank = rankFont.render(p_list[2].my_rank(c_cards)[1], True, (255,31,31))
+                c.SCREEN.blit(p1_rank, (550, 630))
+                c.SCREEN.blit(p2_rank, (370, 120))
+                play_more = sm.YesNo(
+                    ("당신이 <" if p_list[1].my_rank(c_cards)[0] < p_list[2].my_rank(c_cards)[0] else "컴퓨터가 <") + str(
+                        stake_chips) + "> 를 가져갑니다. 더 하시겠습니까?")
+                if play_more == "YES":
+                    p_list[1 if p_list[1].my_rank(c_cards)[0] < p_list[2].my_rank(c_cards)[0] else 2].give_chips(stake_chips)
+                    c_cards = []
+                    race_step = 0
+                    continued = True
+                elif play_more == "NO":
+                    c.WHERE = "LOGO"
 
         if opened:
             betted = [0] + [p_list[i].get_betted for i in range(1, max_player + 1)]
-            if bet_turn == 1 and not p_list[1].get_folded: # 나의 턴일때
+            if bet_turn == 1 and p_list[1].get_thinked:
+                count_turn += 1
+                bet_turn += 1
+            elif bet_turn == 1 and not p_list[1].get_folded: # 나의 턴일때
                 for i in range(4): # 칩생성
                     b.b_chip[i][0]()
                     if c.MSG_ACTIVE:
@@ -412,23 +504,26 @@ def GAME_AI_SCREEN(mode):
                             b.b_plus[i][0].disabled = b.b_minus[i][0].disabled = False
                 count_chip(selected_chip)
             elif bet_turn == 2: # AI THINKING
-                if (p_list[bet_turn].get_thinked and betted[bet_turn] == bet_state) or p_list[bet_turn].get_folded:
+                if (betted[2] == bet_state and p_list[2].get_thinked) or p_list[2].get_folded:
                     count_turn += 1
-                    p_list[bet_turn].reset_think
                     bet_turn = bet_turn + 1 if bet_turn + 1 <= max_player else 1
-                elif not p_list[bet_turn].get_thinking:
-                    p_list[bet_turn].think(c_cards, race_step, bet_state)
+                elif not p_list[bet_turn].get_thinking or (betted[2] != bet_state and p_list[2].get_thinked):
+                    p_list[2].think(c_cards, race_step, bet_state, p_list[1].get_chips)
 
             rFont = pygame.font.Font(c.FONT_TYPE, 50)
             now_round = rFont.render("<" + mode + " ROUND " + str(race_step) + ">", True, (255,31,31))
             c.SCREEN.blit(now_round, (30,30))
             if bet_turn == 1:
-                my_bet_state = c.FONT.render("누적:" + str(betted[1]) + " / 예정:" + str(will_bet), True, (0,0,0))
+                my_bet_state = c.FONT.render("누적:" + str(betted[1]) + " / 예정:" + str(will_bet) + "  보유량:" + str(p_list[1].get_chips), True, (0,0,0))
             else:
-                my_bet_state = c.FONT.render("누적:" + str(betted[1]), True, (0,0,0))
+                my_bet_state = c.FONT.render("누적:" + str(betted[1]) + "  보유량:" + str(p_list[1].get_chips), True, (0,0,0))
             c.SCREEN.blit(my_bet_state, (130,748))
-            ai_bet_state = c.FONT.render("누적:" + str(betted[2]), True, (0,0,0))
+            ai_bet_state = c.FONT.render("누적:" + str(betted[2]) + "  보유량:" + str(p_list[2].get_chips), True, (0,0,0))
             c.SCREEN.blit(ai_bet_state, (874,25))
+            stake_text = c.FONT.render("총 누적된 칩", True, (0,0,0))
+            stake_chips_state = c.FONT.render(str(stake_chips), True, (0,0,0))
+            c.SCREEN.blit(stake_text, (940, 345))
+            c.SCREEN.blit(stake_chips_state, (940, 385))
 
             if b.b_bet.motion:
                 if will_bet == 0:
@@ -448,23 +543,25 @@ def GAME_AI_SCREEN(mode):
                 motion = sm.YesNo(msg)
                 if motion == "YES":
                     p_list[1].bet(bet_state - betted[1] if will_bet+betted[1] <= bet_state else will_bet)
-                    bet_state += 0 if will_bet+betted[1] <= bet_state else will_bet
+                    bet_state += 0 if will_bet+betted[1] <= bet_state else betted[1]+will_bet-bet_state
                     bet_turn = bet_turn+1 if bet_turn+1 <= max_player else 1
                     count_turn += 1
                     b.b_bet.reset
                 elif motion == "NO":
                     b.b_bet.reset
-
+            betted = [0] + [p_list[i].get_betted for i in range(1, max_player + 1)]
             if count_turn == max_player: # 턴이 한번씩 다 돌았을 때
                 bet_check = 0
                 fold_check = 0
                 collect_betted = 0
                 for i in range(1,max_player+1): # 베팅상황 체크
-                    if betted[i] == bet_state or p_list[i].get_folded:
+                    if (betted[i] == bet_state and p_list[i].get_thinked) or p_list[i].get_folded:
                         bet_check += 1
                         collect_betted += betted[i]
                         if p_list[i].get_folded:
                             fold_check += 1
+                    elif betted[i] != bet_state:
+                        p_list[i].reset_think
                 if bet_check == max_player: # 모두 콜하거나 폴드 되었다면
                     stake_chips += collect_betted
                     if fold_check == max_player - 1: # 한명빼고 나머지가 모두 폴드 했을 때
@@ -473,10 +570,11 @@ def GAME_AI_SCREEN(mode):
                         race_step += 1
                         bet_state = 0
                         will_bet = 0
-                        bet_turn = small_blind
                         p_list[1].reset_betted
+                        p_list[1].reset_think
                         p_list[2].reset_betted
                         p_list[2].reset_think # AI 재설정
+                bet_turn = small_blind
                 count_turn = 0
 
             if b.b_fold.motion:
