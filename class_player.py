@@ -65,6 +65,7 @@ class player:
     def card_reset(self):
         self.__opened = False
         self.__cards = []
+        self.__rank = ()
 
     @property
     def card_open(self):
@@ -88,11 +89,8 @@ class player:
         self.__thinked = True
 
     def my_rank(self, cards):
-        if self.__rank:
-            return self.__rank
-        else:
-            card_list = []
-            for i in self.__cards + cards:
-                card_list.append(list(i.get_card))
-            self.__rank = s.get_rank(s.str_to_int(card_list))
-            return s.get_rank(s.str_to_int(card_list))
+        card_list = []
+        for i in self.__cards + cards:
+            card_list.append(list(i.get_card))
+        self.__rank = s.get_rank(s.str_to_int(card_list))
+        return self.__rank

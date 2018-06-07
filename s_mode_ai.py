@@ -9,6 +9,8 @@ import buttons as b
 import sendmsg as sm
 
 c_cards = []
+p1_hand = []
+p2_hand = []
 small_blind = 0
 p_list = [0, player(1, 1000), ai(2, 1000, "HARD")] # 플레이어 리스트
 max_player = 2 # 최대 플레이어
@@ -22,8 +24,10 @@ stake_chips = 0
 will_bet = 0
 selected_chip = 0
 def fresh_deck(mode):
-    global c_cards
+    global c_cards, p1_hand, p2_hand
     new = []
+    p1 = []
+    p2 = []
     suits = ["SPADE", "HEART", "DIAMOND", "CLUB"]
     ranks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
 
@@ -39,6 +43,15 @@ def fresh_deck(mode):
             if give == 0:
                 give = max_player
             p_list[give].give_card(card(new[i*2 + j], give, i+1, mode))
+            if give == 1:
+                p1.append(new[i*2 + j])
+            if give == 2:
+                p2.append(new[i*2 + j])
+    for i in range(2):
+        p1_hand.append(list(p1[i]))
+        p2_hand.append(list(p2[i]))
+    p1_hand = str_to_int(p1_hand)
+    p2_hand = str_to_int(p2_hand)
 
     # 커뮤니티 카드
     for i in range(max_player*2 + 1, max_player*2 + 6):
@@ -98,7 +111,7 @@ def count_chip(multiple):
             will_bet += b.b_plus[i][1] * multiple
             if will_bet > p_list[1].get_chips:
                 will_bet = p_list[1].get_chips
-            if will_bet > p_list[2].get_chips:
+            if will_bet > bet_state - p_list[1].get_betted + p_list[2].get_chips:
                 will_bet = p_list[2].get_chips
             b.b_plus[i][0].motion = False
         elif b.b_minus[i][0].motion:
@@ -129,26 +142,6 @@ def str_to_int(card_list):  # 카드순위를 계산하기 쉽게 문양도 숫�
             card[1] = int(card[1])
     return card_list
 
-def int_to_str(card_list):
-    for card in card_list:
-        if card[0] == 0:
-            card[0] = "Spade"
-        elif card[0] == 1:
-            card[0] = "Heart"
-        elif card[0] == 2:
-            card[0] = "Diamond"
-        elif card[0] == 3:
-            card[0] = "Club"
-        if card[1] == 14:
-            card[1] = "A"
-        elif card[1] == 13:
-            card[1] = "K"
-        elif card[1] == 12:
-            card[1] = "Q"
-        elif card[1] == 11:
-            card[1] = "J"
-    return card_list
-
 def get_rank(card_list):
     hand = sorted(card_list)
     rank_list = []
@@ -167,7 +160,7 @@ def get_rank(card_list):
     # 146 ~ 158 One Pair
     # 159 ~ 166 High Card
 
-    rank_name = "High Card"
+    rank_name = "HIGH CARD"
     rank = 173 - max(rank_list)
 
     Four_card = False
@@ -230,31 +223,40 @@ def get_rank(card_list):
             if rank > 146:
                 rank = 160 - Pair_list[0]
                 rank_name = "ONE PAIR"
-    Straight = False
-    top_number = 0
-    for i in range(len(rank_list)-4):
-        if rank_list[i + 1] - rank_list[i] == 1 and rank_list[i + 2] - rank_list[i + 1] == 1 and rank_list[i + 3] - \
-                rank_list[i + 2] == 1 and rank_list[i + 4] - rank_list[i + 3] == 1:
-            Straight = True
-            top_number = rank_list[i+4]
-    if Straight:
-        if top_number == 14:
-            rank = 45
-            rank_name = "MOUNTAIN"
-        else:
-            rank = 59 - top_number
+    for x in range(0, len(hand) -1):
+        if rank_list[len(hand)-1-x] == rank_list[len(hand)-2-x]:
+                    del rank_list[len(hand)-1-x]
+
+    if len(rank_list) >= 5:
+        Straight = False
+        top_number = 0
+        for i in range(len(rank_list)-4):
+            if rank_list[i+1]-rank_list[i] == 1 and \
+                rank_list[i+2]-rank_list[i+1] == 1 and \
+                rank_list[i+3]-rank_list[i+2] == 1 and \
+                rank_list[i+4]-rank_list[i+3] == 1:
+                Straight = True
+                top_number = rank_list[i+4]
+        if Straight:
+            if top_number == 14:
+                rank = 45
+                rank_name = "STRAIGHT"
+            else:
+                rank = 59 - top_number
+                rank_name = "STRAIGHT"
+        if 2 in rank_list and 3 in rank_list and \
+            4 in rank_list and 5 in rank_list and \
+            14 in rank_list:                          # A 2 3 4 5 스트레이트는 숫자상으로 2 3 4 5 14 이므로 이렇게 표현
+            rank = 54
             rank_name = "STRAIGHT"
-    if 2 in rank_list and 3 in rank_list and \
-        4 in rank_list and 5 in rank_list and \
-        14 in rank_list:                          # A 2 3 4 5 스트레이트는 숫자상으로 2 3 4 5 14 이므로 이렇게 표현
-        rank = 54
-        rank_name = "STRAIGHT"
 
     suit_list = []
     for x in hand:
         suit_list.append(x[0])
 
-    if not(Four_card or Full_House):                # Flush 보다 높은 족보
+    if Four_card or Full_House:                # Flush보다 높은 족보
+        pass
+    else:
         Flush = False
         num = []
         if suit_list.count(0) >= 5:
@@ -266,7 +268,7 @@ def get_rank(card_list):
             for x in hand:
                 num.append(x[1])
             rank = 51 - max(num)
-            rank_name = "SPADE FLUSH"
+            rank_name = "FLUSH"
         elif suit_list.count(1) >= 5:
             Flush = True
             pattern_num = 1
@@ -276,7 +278,7 @@ def get_rank(card_list):
             for x in hand:
                 num.append(x[1])
             rank = 51 - max(num)
-            rank_name = "HEART FLUSH"
+            rank_name = "FLUSH"
         elif suit_list.count(2) >= 5:
             Flush = True
             pattern_num = 2
@@ -286,7 +288,7 @@ def get_rank(card_list):
             for x in hand:
                 num.append(x[1])
             rank = 51 - max(num)
-            rank_name = "DIAMOND FLUSH"
+            rank_name = "FLUSH"
         elif suit_list.count(3) >= 5:
             Flush = True
             pattern_num = 3
@@ -296,33 +298,100 @@ def get_rank(card_list):
             for x in hand:
                 num.append(x[1])
             rank = 51 - max(num)
-            rank_name = "CLUB FLUSH"
+            rank_name = "FLUSH"
+        num_len = len(num)
         if Flush:
+            for x in range(0, num_len - 1):
+                if num[num_len - 1 - x] == num[num_len - 2 - x]:
+                    del num[num_len - 1 - x]
             num.sort()
-            if num[1]-num[0] == 1 and \
-                num[2]-num[1] == 1 and \
-                num[3]-num[2] == 1 and \
-                num[4]-num[3] == 1:
-                if max(num) == 14:
-                    rank = 1
-                    rank_name = "ROYAL FLUSH"
-                else:
-                    rank = 15 - max(num)
+            if len(num) >= 5:
+                if num[1]-num[0] == 1 and \
+                    num[2]-num[1] == 1 and \
+                    num[3]-num[2] == 1 and \
+                    num[4]-num[3] == 1:
+                    if max(num) == 14:
+                        rank = 1
+                        rank_name = "ROYAL FLUSH"
+                    else:
+                        rank = 15 - max(num)
+                        rank_name = "STRAIGHT FLUSH"
+                if num == [2, 3, 4, 5, 14]:
+                    rank = 10
                     rank_name = "STRAIGHT FLUSH"
-            if num == [2, 3, 4, 5, 14]:
-                rank = 10
-                rank_name = "STRAIGHT FLUSH"
 
     return (rank, rank_name)
 
+
+def get_potential_rank(card_list):
+    hand = sorted(card_list)
+    rank_list = []
+    for x in hand:
+        rank_list.append(x[1])
+    rank_list.sort()  # 숫자만을 오름차순으로 정렬
+
+    rank_name = "High_Card"
+
+    if (2 in rank_list and 3 in rank_list and 4 in rank_list and 5 in rank_list) or \
+            (3 in rank_list and 4 in rank_list and 5 in rank_list and 6 in rank_list) or \
+            (4 in rank_list and 5 in rank_list and 6 in rank_list and 7 in rank_list) or \
+            (5 in rank_list and 6 in rank_list and 7 in rank_list and 8 in rank_list) or \
+            (6 in rank_list and 7 in rank_list and 8 in rank_list and 9 in rank_list) or \
+            (7 in rank_list and 8 in rank_list and 9 in rank_list and 10 in rank_list) or \
+            (8 in rank_list and 9 in rank_list and 10 in rank_list and 11 in rank_list) or \
+            (9 in rank_list and 10 in rank_list and 11 in rank_list and 12 in rank_list) or \
+            (10 in rank_list and 11 in rank_list and 12 in rank_list and 13 in rank_list) or \
+            (11 in rank_list and 12 in rank_list and 14 in rank_list and 14 in rank_list) or \
+            (14 in rank_list and 2 in rank_list and 3 in rank_list and 4 in rank_list) or \
+            (2 in rank_list and 4 in rank_list and 5 in rank_list and 6 in rank_list) or \
+            (3 in rank_list and 5 in rank_list and 6 in rank_list and 7 in rank_list) or \
+            (4 in rank_list and 6 in rank_list and 7 in rank_list and 8 in rank_list) or \
+            (5 in rank_list and 7 in rank_list and 8 in rank_list and 9 in rank_list) or \
+            (6 in rank_list and 8 in rank_list and 9 in rank_list and 10 in rank_list) or \
+            (7 in rank_list and 9 in rank_list and 10 in rank_list and 11 in rank_list) or \
+            (8 in rank_list and 10 in rank_list and 11 in rank_list and 12 in rank_list) or \
+            (9 in rank_list and 11 in rank_list and 12 in rank_list and 13 in rank_list) or \
+            (10 in rank_list and 12 in rank_list and 13 in rank_list and 14 in rank_list) or \
+            (14 in rank_list and 3 in rank_list and 4 in rank_list and 5 in rank_list) or \
+            (2 in rank_list and 3 in rank_list and 5 in rank_list and 6 in rank_list) or \
+            (3 in rank_list and 4 in rank_list and 6 in rank_list and 7 in rank_list) or \
+            (4 in rank_list and 5 in rank_list and 7 in rank_list and 8 in rank_list) or \
+            (5 in rank_list and 6 in rank_list and 8 in rank_list and 9 in rank_list) or \
+            (6 in rank_list and 7 in rank_list and 9 in rank_list and 10 in rank_list) or \
+            (7 in rank_list and 8 in rank_list and 10 in rank_list and 11 in rank_list) or \
+            (8 in rank_list and 9 in rank_list and 11 in rank_list and 12 in rank_list) or \
+            (9 in rank_list and 10 in rank_list and 12 in rank_list and 13 in rank_list) or \
+            (10 in rank_list and 11 in rank_list and 13 in rank_list and 14 in rank_list) or \
+            (14 in rank_list and 2 in rank_list and 4 in rank_list and 5 in rank_list) or \
+            (2 in rank_list and 3 in rank_list and 4 in rank_list and 6 in rank_list) or \
+            (3 in rank_list and 4 in rank_list and 5 in rank_list and 7 in rank_list) or \
+            (4 in rank_list and 5 in rank_list and 6 in rank_list and 8 in rank_list) or \
+            (5 in rank_list and 6 in rank_list and 7 in rank_list and 9 in rank_list) or \
+            (6 in rank_list and 7 in rank_list and 8 in rank_list and 10 in rank_list) or \
+            (7 in rank_list and 8 in rank_list and 9 in rank_list and 11 in rank_list) or \
+            (8 in rank_list and 9 in rank_list and 10 in rank_list and 12 in rank_list) or \
+            (9 in rank_list and 10 in rank_list and 11 in rank_list and 13 in rank_list) or \
+            (10 in rank_list and 11 in rank_list and 12 in rank_list and 14 in rank_list) or \
+            (14 in rank_list and 2 in rank_list and 3 in rank_list and 5 in rank_list):
+        rank_name = "P_Straight"
+
+        suit_list = []
+        for x in hand:
+            suit_list.append(x[0])  # 문양만 추가
+        for i in range(4):
+            if suit_list.count(i) == 4:
+                rank_name = "P_Flush"
+
+    return rank_name
+
 def GAME_AI_SCREEN(mode):
-    global p_list, stake_chips, bet_state, race_step, bet_turn, count_turn, small_blind, will_bet, c_cards, divided, selected_chip, continued
+    global p_list, stake_chips, bet_state, race_step, bet_turn, count_turn, small_blind, will_bet, p1_hand, p2_hand, c_cards, divided, selected_chip, continued
     if mode == "EASY":
-        pass
+        c.SCREEN.blit(c.AI_EASY_BACK, (0, 0))
     elif mode == "NORMAL":
         pass
     elif mode == "HARD":
-        c.SCREEN.blit(c.AI_EASY_BACK, (0, 0))
+        pass
 
     if race_step == 0:
         if not c_cards:  # 덱이 비었을때
@@ -440,13 +509,16 @@ def GAME_AI_SCREEN(mode):
             
         if race_step == 5: # 승패 처리 (2인용으로 우선제작)
             if p_list[1].get_folded:
-                p_list[2].give_chips(stake_chips)
                 play_more = sm.YesNo("컴퓨터가 <" + str(stake_chips) + "> 를 가져갑니다. 더 하시겠습니까?")
                 if play_more == "YES":
                     p_list[2].give_chips(stake_chips)
                     c_cards = []
+                    p1_hand = []
+                    p2_hand = []
                     race_step = 0
                     continued = True
+                    p_list[1].card_reset
+                    p_list[2].card_reset
                 elif play_more == "NO":
                     c.WHERE = "LOGO"
             elif p_list[2].get_folded:
@@ -454,24 +526,70 @@ def GAME_AI_SCREEN(mode):
                 if play_more == "YES":
                     p_list[1].give_chips(stake_chips)
                     c_cards = []
+                    p1_hand = []
+                    p2_hand = []
                     race_step = 0
                     continued = True
+                    p_list[1].card_reset
+                    p_list[2].card_reset
                 elif play_more == "NO":
                     c.WHERE = "LOGO"
             else: # 모두 폴드 X
                 rankFont = pygame.font.Font(c.FONT_TYPE, 50)
-                p1_rank = rankFont.render(p_list[1].my_rank(c_cards)[1], True, (255,31,31))
-                p2_rank = rankFont.render(p_list[2].my_rank(c_cards)[1], True, (255,31,31))
+                p1_rank = rankFont.render(p_list[1].my_rank(c_cards)[1], True, (255, 31, 31))
+                p2_rank = rankFont.render(p_list[2].my_rank(c_cards)[1], True, (255, 31, 31))
                 c.SCREEN.blit(p1_rank, (550, 630))
                 c.SCREEN.blit(p2_rank, (370, 120))
-                play_more = sm.YesNo(
-                    ("당신이 <" if p_list[1].my_rank(c_cards)[0] < p_list[2].my_rank(c_cards)[0] else "컴퓨터가 <") + str(
-                        stake_chips) + "> 를 가져갑니다. 더 하시겠습니까?")
+                if p_list[1].my_rank(c_cards)[0] < p_list[2].my_rank(c_cards)[0]:
+                    play_more = sm.YesNo("당신이 <" + str(stake_chips) + "> 를 가져갑니다. 더 하시겠습니까?")
+                elif p_list[1].my_rank(c_cards)[0] > p_list[2].my_rank(c_cards)[0]:
+                    play_more = sm.YesNo("컴퓨터가 <" + str(stake_chips) + "> 를 가져갑니다. 더 하시겠습니까?")
+                elif p_list[1].my_rank(c_cards)[0] == p_list[2].my_rank(c_cards)[0]:
+                    p1_hand.sort(key=lambda x:x[1])
+                    p2_hand.sort(key=lambda x:x[1])
+                    if p1_hand[1][1] > p2_hand[1][1]:
+                        play_more = sm.YesNo("당신이 <" + str(stake_chips) + "> 를 가져갑니다. 더 하시겠습니까?")
+                    elif p1_hand[1][1] < p2_hand[1][1]:
+                        play_more = sm.YesNo("컴퓨터가 <" + str(stake_chips) + "> 를 가져갑니다. 더 하시겠습니까?")
+                    elif p1_hand[1][1] == p2_hand[1][1]:
+                        if p1_hand[0][1] > p2_hand[0][1]:
+                            play_more = sm.YesNo("당신이 <" + str(stake_chips) + "> 를 가져갑니다. 더 하시겠습니까?")
+                        elif p1_hand[0][1] < p2_hand[0][1]:
+                            play_more = sm.YesNo("컴퓨터가 <" + str(stake_chips) + "> 를 가져갑니다. 더 하시겠습니까?")
+                        elif p1_hand[0][1] == p2_hand[0][1]:
+                            if p1_hand[1][0] < p2_hand[1][0]:
+                                play_more = sm.YesNo("당신이 <" + str(stake_chips) + "> 를 가져갑니다. 더 하시겠습니까?")
+                            elif p1_hand[1][0] > p2_hand[1][0]:
+                                play_more = sm.YesNo("컴퓨터가 <" + str(stake_chips) + "> 를 가져갑니다. 더 하시겠습니까?")
                 if play_more == "YES":
-                    p_list[1 if p_list[1].my_rank(c_cards)[0] < p_list[2].my_rank(c_cards)[0] else 2].give_chips(stake_chips)
+                    if p_list[1].my_rank(c_cards)[0] < p_list[2].my_rank(c_cards)[0]:
+                        p_list[1].give_chips(stake_chips)
+                    elif p_list[1].my_rank(c_cards)[0] > p_list[2].my_rank(c_cards)[0]:
+                        p_list[2].give_chips(stake_chips)
+                    elif p_list[1].my_rank(c_cards)[0] == p_list[2].my_rank(c_cards)[0]:
+                        p1_hand.sort(key=lambda x: x[1])
+                        p2_hand.sort(key=lambda x: x[1])
+                        if p1_hand[1][1] > p2_hand[1][1]:
+                            p_list[1].give_chips(stake_chips)
+                        elif p1_hand[1][1] < p2_hand[1][1]:
+                            p_list[2].give_chips(stake_chips)
+                        elif p1_hand[1][1] == p2_hand[1][1]:
+                            if p1_hand[0][1] > p2_hand[0][1]:
+                                p_list[1].give_chips(stake_chips)
+                            elif p1_hand[0][1] < p2_hand[0][1]:
+                                p_list[2].give_chips(stake_chips)
+                            elif p1_hand[0][1] == p2_hand[0][1]:
+                                if p1_hand[1][0] > p2_hand[1][0]:
+                                    p_list[1].give_chips(stake_chips)
+                                elif p1_hand[1][0] < p2_hand[1][0]:
+                                    p_list[2].give_chips(stake_chips)
                     c_cards = []
+                    p1_hand = []
+                    p2_hand = []
                     race_step = 0
                     continued = True
+                    p_list[1].card_reset
+                    p_list[2].card_reset
                 elif play_more == "NO":
                     c.WHERE = "LOGO"
 
@@ -575,6 +693,7 @@ def GAME_AI_SCREEN(mode):
                         p_list[2].reset_betted
                         p_list[2].reset_think # AI 재설정
                 bet_turn = small_blind
+                will_bet = 0
                 count_turn = 0
 
             if b.b_fold.motion:

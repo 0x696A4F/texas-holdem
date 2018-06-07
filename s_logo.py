@@ -29,7 +29,7 @@ def LOGO_SCREEN():
     b.b_select()
     b.b_developer()
     if b.b_select.motion:
-        c.WHERE = "GAME_AI_HARD"
+        c.WHERE = "GAME_AI_EASY"
         s.small_blind = 0
         b.b_select.reset
     if b.b_developer.motion:

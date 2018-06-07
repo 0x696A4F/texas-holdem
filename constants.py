@@ -24,7 +24,7 @@ LOGO_GREEN = (11,148,68)
 EASY_COLOUR = (210,200,0)
 
 # SCREEN WHERE
-WHERE = "GAME_AI_HARD" # FIRST = LOGO
+WHERE = "LOGO" # FIRST = LOGO
 
 # LOGO
 TEXAS_LOGO = pygame.image.load("img/logo/holdem_logo.png")
