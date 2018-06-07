@@ -2,8 +2,6 @@ import pygame
 import constants as c
 import buttons as b
 import s_mode_ai as s
-import class_ai
-import class_player
 
 def LOGO_SCREEN():
     c.SCREEN.fill(c.LOGO_GREEN)
