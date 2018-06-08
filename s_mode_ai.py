@@ -112,7 +112,7 @@ def count_chip(multiple):
             if will_bet > p_list[1].get_chips:
                 will_bet = p_list[1].get_chips
             if will_bet > bet_state - p_list[1].get_betted + p_list[2].get_chips:
-                will_bet = p_list[2].get_chips
+                will_bet = bet_state - p_list[1].get_betted + p_list[2].get_chips
             b.b_plus[i][0].motion = False
         elif b.b_minus[i][0].motion:
             will_bet -= b.b_minus[i][1] * multiple
@@ -428,7 +428,6 @@ def GAME_AI_SCREEN(mode):
         if continued:
             if p_list[small_blind].get_chips < 25: #SB 지불비용 X일시
                 text = ("당신이 " if small_blind == 2 else "컴퓨터가 ") + "이겼습니다. 처음부터 다시 시작하겠습니까?"
-                print(0)
                 ask = sm.YesNo(text)
                 if ask == "YES":
                     race_step = 0
@@ -579,9 +578,9 @@ def GAME_AI_SCREEN(mode):
                             elif p1_hand[0][1] < p2_hand[0][1]:
                                 p_list[2].give_chips(stake_chips)
                             elif p1_hand[0][1] == p2_hand[0][1]:
-                                if p1_hand[1][0] > p2_hand[1][0]:
+                                if p1_hand[1][0] < p2_hand[1][0]:
                                     p_list[1].give_chips(stake_chips)
-                                elif p1_hand[1][0] < p2_hand[1][0]:
+                                elif p1_hand[1][0] > p2_hand[1][0]:
                                     p_list[2].give_chips(stake_chips)
                     c_cards = []
                     p1_hand = []
